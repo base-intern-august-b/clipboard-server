@@ -1,0 +1,2 @@
+# clipboard-server
+backend

@@ -1,0 +1,48 @@
+version: "3"
+
+services:
+  backend:
+    build: ./
+    restart: always
+    environment:
+      SERVER_PORT: "8080"
+      DB_USER: "root"
+      DB_PASS: "password"
+      DB_HOST: "mysql"
+      DB_NAME: "clipboard"
+      DB_PORT: "3306"
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: rebuild
+          path: ./
+
+  mysql:
+    image: mariadb:10.6.4
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: clipboard
+    command: mysqld --character-set-server=utf8 --collation-server=utf8_general_ci
+    expose:
+      - "3306"
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: mysql --user=root --password=$$MYSQL_ROOT_PASSWORD --execute "SHOW DATABASES;"
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  adminer:
+    image: adminer:standalone
+    restart: always
+    environment:
+      ADMINER_DEFAULT_SERVER: mysql
+      ADMINER_DESIGN: pepa-linha
+    ports:
+      - "3001:8080"

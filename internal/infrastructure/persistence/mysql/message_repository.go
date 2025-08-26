@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/base-intern-august-b/clipboard-server/internal/domain/model"
 	"github.com/base-intern-august-b/clipboard-server/internal/domain/repository"
@@ -54,19 +55,19 @@ func (r *messageRepository) CreateMessage(ctx context.Context, req *model.Reques
 	return &createdMessage, nil
 }
 
-func (r *messageRepository) GetMessages(ctx context.Context, req *model.RequestGetMessages) ([]*model.Message, error) {
+func (r *messageRepository) GetMessages(ctx context.Context, channelID uuid.UUID, limit int, offset int) ([]*model.Message, error) {
 	query := `SELECT * FROM u_message WHERE channel_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?`
 	var messages []*model.Message
-	if err := r.db.SelectContext(ctx, &messages, query, req.ChannelID.String(), req.Limit, req.Offset); err != nil {
+	if err := r.db.SelectContext(ctx, &messages, query, channelID.String(), limit, offset); err != nil {
 		return nil, err
 	}
 	return messages, nil
 }
 
-func (r *messageRepository) GetMessagesInDuration(ctx context.Context, req *model.RequestGetMessagesInDuration) ([]*model.Message, error) {
+func (r *messageRepository) GetMessagesInDuration(ctx context.Context, channelID uuid.UUID, start, end time.Time) ([]*model.Message, error) {
 	query := `SELECT * FROM u_message WHERE channel_id = ? AND created_at BETWEEN ? AND ? ORDER BY created_at DESC`
 	var messages []*model.Message
-	if err := r.db.SelectContext(ctx, &messages, query, req.ChannelID.String(), req.StartTime, req.EndTime); err != nil {
+	if err := r.db.SelectContext(ctx, &messages, query, channelID.String(), start, end); err != nil {
 		return nil, err
 	}
 	return messages, nil
@@ -75,7 +76,7 @@ func (r *messageRepository) GetMessagesInDuration(ctx context.Context, req *mode
 func (r *messageRepository) GetPinnedMessages(ctx context.Context, channelID uuid.UUID) ([]*model.Message, error) {
 	query := `SELECT m.* FROM u_message m
 	JOIN u_pinned_message pm ON m.message_id = pm.message_id
-	WHERE m.channel_id = ? ORDER BY pm.pinned_at DESC`
+	WHERE m.channel_id = ? ORDER BY pm.created_at DESC`
 	var messages []*model.Message
 	if err := r.db.SelectContext(ctx, &messages, query, channelID.String()); err != nil {
 		return nil, err
@@ -127,9 +128,25 @@ func (r *messageRepository) PatchMessage(ctx context.Context, messageID uuid.UUI
 }
 
 func (r *messageRepository) PinnMessage(ctx context.Context, messageID uuid.UUID) error {
-	query := `SELECT channel_id FROM u_message WHERE message_id = ?`
-	result, err := r.db.ExecContext(ctx, query, messageID.String())
+	var message struct {
+		ChannelID uuid.UUID `db:"channel_id"`
+	}
+	// First, get the channel_id from the message
+	err := r.db.GetContext(ctx, &message, "SELECT channel_id FROM u_message WHERE message_id = ?", messageID.String())
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return model.ErrMessageNotFound
+		}
+		return err
+	}
+
+	// Now, insert into u_pinned_message with both message_id and channel_id
+	query := `INSERT INTO u_pinned_message (message_id, channel_id) VALUES (?, ?)`
+	result, err := r.db.ExecContext(ctx, query, messageID.String(), message.ChannelID.String())
+	if err != nil {
+		if mysqlErr, ok := err.(*mysql.MySQLError); ok && mysqlErr.Number == 1062 {
+			return model.ErrMessageAlreadyPinned
+		}
 		return err
 	}
 
@@ -138,24 +155,8 @@ func (r *messageRepository) PinnMessage(ctx context.Context, messageID uuid.UUID
 		return err
 	}
 	if rowsAffected == 0 {
-		return model.ErrMessageNotFound
-	}
-
-	query = `INSERT INTO u_pinned_message (message_id) VALUES (?)`
-	result, err = r.db.ExecContext(ctx, query, messageID.String())
-	if err != nil {
-		if mysqlErr, ok := err.(*mysql.MySQLError); ok && mysqlErr.Number == 1062 {
-			return model.ErrMessageAlreadyPinned
-		}
-		return err
-	}
-
-	rowsAffected, err = result.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if rowsAffected == 0 {
-		return model.ErrMessageNotFound
+		// This case should ideally not be reached if the insert succeeds without error
+		return fmt.Errorf("failed to pin message, no rows affected")
 	}
 	return nil
 }

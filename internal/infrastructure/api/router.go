@@ -53,25 +53,30 @@ func (r *Router) Setup() http.Handler {
 
 		// チャンネルAPI
 		channelHandler := NewChannelHandler(r.channelUsecase)
+		messageHandler := NewMessageHandler(r.messageUsecase)
 		v1.Route("/channels", func(channel chi.Router) {
 			channel.Post("/", channelHandler.CreateChannel)
 			channel.Get("/", channelHandler.GetChannels)
-			channel.Get("/{channelNID}", channelHandler.GetChannelByName)
-			channel.Patch("/{channelID}", channelHandler.PatchChannel)
-			channel.Delete("/{channelID}", channelHandler.DeleteChannel)
+
+			channel.Route("/{channelID}", func(ch chi.Router) {
+				ch.Get("/", channelHandler.GetChannelByName)
+				ch.Patch("/", channelHandler.PatchChannel)
+				ch.Delete("/", channelHandler.DeleteChannel)
+
+				// チャンネルごとのメッセージ
+				ch.Get("/messages", messageHandler.GetMessages)
+				ch.Get("/messages/span", messageHandler.GetMessagesInDuration)
+				ch.Get("/messages/pinned", messageHandler.GetPinnedMessages)
+			})
 		})
 
 		// メッセージAPI
-		messageHandler := NewMessageHandler(r.messageUsecase)
 		v1.Route("/messages", func(message chi.Router) {
 			message.Post("/", messageHandler.CreateMessage)
-			message.Post("/pinn/{messageID}", messageHandler.PinnMessage)
-			message.Post("/unpinn/{messageID}", messageHandler.UnpinnMessage)
-			message.Get("/channel", messageHandler.GetMessages)
-			message.Get("/channel/span", messageHandler.GetMessagesInDuration)
-			message.Get("/pinned/{channelID}", messageHandler.GetPinnedMessages)
 			message.Patch("/{messageID}", messageHandler.PatchMessage)
 			message.Delete("/{messageID}", messageHandler.DeleteMessage)
+			message.Post("/{messageID}/pin", messageHandler.PinnMessage)
+			message.Post("/{messageID}/unpin", messageHandler.UnpinnMessage)
 		})
 	})
 

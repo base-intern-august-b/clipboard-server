@@ -24,15 +24,3 @@ type RequestCreateMessage struct {
 type RequestPatchMessage struct {
 	Content *string `json:"content,omitempty"`
 }
-
-type RequestGetMessages struct {
-	ChannelID uuid.UUID `json:"channel_id"`
-	Limit     int       `json:"limit"`
-	Offset    int       `json:"offset"`
-}
-
-type RequestGetMessagesInDuration struct {
-	ChannelID uuid.UUID `json:"channel_id"`
-	StartTime time.Time `json:"start_time"`
-	EndTime   time.Time `json:"end_time"`
-}

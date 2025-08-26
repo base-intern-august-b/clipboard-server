@@ -3,6 +3,8 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/base-intern-august-b/clipboard-server/internal/domain/model"
 	"github.com/base-intern-august-b/clipboard-server/internal/domain/usecase"
@@ -40,15 +42,27 @@ func (h *MessageHandler) CreateMessage(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(message)
 }
 
-// GetMessages : GET /v1/messages/channel
+// GetMessages : GET /v1/channels/{channelID}/messages
 func (h *MessageHandler) GetMessages(w http.ResponseWriter, r *http.Request) {
-	var req model.RequestGetMessages
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+	channelID, err := getID(r, "channelID")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	messages, err := h.messageUsecase.GetMessages(r.Context(), &req)
+	limitStr := r.URL.Query().Get("limit")
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limitStr == "" {
+		limit = 100 // Default limit
+	}
+
+	offsetStr := r.URL.Query().Get("offset")
+	offset, err := strconv.Atoi(offsetStr)
+	if err != nil || offsetStr == "" {
+		offset = 0 // Default offset
+	}
+
+	messages, err := h.messageUsecase.GetMessages(r.Context(), channelID, limit, offset)
 	if err != nil {
 		if err == model.ErrChannelNotFound {
 			http.Error(w, err.Error(), http.StatusNotFound)
@@ -62,15 +76,29 @@ func (h *MessageHandler) GetMessages(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(messages)
 }
 
-// GetMessagesInDuration : POST /v1/messages/span
+// GetMessagesInDuration : GET /v1/channels/{channelID}/messages/span
 func (h *MessageHandler) GetMessagesInDuration(w http.ResponseWriter, r *http.Request) {
-	var req model.RequestGetMessagesInDuration
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+	channelID, err := getID(r, "channelID")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	messages, err := h.messageUsecase.GetMessagesInDuration(r.Context(), &req)
+	startStr := r.URL.Query().Get("start")
+	startTime, err := time.Parse(time.RFC3339, startStr)
+	if err != nil {
+		http.Error(w, "Invalid start time format", http.StatusBadRequest)
+		return
+	}
+
+	endStr := r.URL.Query().Get("end")
+	endTime, err := time.Parse(time.RFC3339, endStr)
+	if err != nil {
+		http.Error(w, "Invalid end time format", http.StatusBadRequest)
+		return
+	}
+
+	messages, err := h.messageUsecase.GetMessagesInDuration(r.Context(), channelID, startTime, endTime)
 	if err != nil {
 		if err == model.ErrChannelNotFound {
 			http.Error(w, err.Error(), http.StatusNotFound)
@@ -87,7 +115,7 @@ func (h *MessageHandler) GetMessagesInDuration(w http.ResponseWriter, r *http.Re
 	json.NewEncoder(w).Encode(messages)
 }
 
-// GetPinnedMessages : GET /v1/messages/pinned/{channelID}
+// GetPinnedMessages : GET /v1/channels/{channelID}/messages/pinned
 func (h *MessageHandler) GetPinnedMessages(w http.ResponseWriter, r *http.Request) {
 	channelID, err := getID(r, "channelID")
 	if err != nil {
@@ -139,7 +167,7 @@ func (h *MessageHandler) PatchMessage(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(message)
 }
 
-// PinnMessage : POST /v1/messages/pinn/{messageID}
+// PinnMessage : POST /v1/messages/{messageID}/pin
 func (h *MessageHandler) PinnMessage(w http.ResponseWriter, r *http.Request) {
 	messageID, err := getID(r, "messageID")
 	if err != nil {
@@ -160,7 +188,7 @@ func (h *MessageHandler) PinnMessage(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// UnpinnMessage : POST /v1/messages/unpinn/{messageID}
+// UnpinnMessage : POST /v1/messages/{messageID}/unpin
 func (h *MessageHandler) UnpinnMessage(w http.ResponseWriter, r *http.Request) {
 	messageID, err := getID(r, "messageID")
 	if err != nil {

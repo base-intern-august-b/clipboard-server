@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"time"
 
 	"github.com/base-intern-august-b/clipboard-server/internal/domain/model"
 	"github.com/base-intern-august-b/clipboard-server/internal/domain/repository"
@@ -23,18 +24,18 @@ func (m *messageUsecase) CreateMessage(ctx context.Context, req *model.RequestCr
 	return m.messageRepo.CreateMessage(ctx, req)
 }
 
-func (m *messageUsecase) GetMessages(ctx context.Context, req *model.RequestGetMessages) ([]*model.Message, error) {
-	if req.Limit < 1 || req.Limit > 1000 {
+func (m *messageUsecase) GetMessages(ctx context.Context, channelID uuid.UUID, limit int, offset int) ([]*model.Message, error) {
+	if limit < 1 || limit > 1000 {
 		return nil, model.ErrInvalidRequestLimit
 	}
-	return m.messageRepo.GetMessages(ctx, req)
+	return m.messageRepo.GetMessages(ctx, channelID, limit, offset)
 }
 
-func (m *messageUsecase) GetMessagesInDuration(ctx context.Context, req *model.RequestGetMessagesInDuration) ([]*model.Message, error) {
-	if req.StartTime.After(req.EndTime) {
+func (m *messageUsecase) GetMessagesInDuration(ctx context.Context, channelID uuid.UUID, start, end time.Time) ([]*model.Message, error) {
+	if start.After(end) {
 		return nil, model.ErrInvalidTimeRange
 	}
-	return m.messageRepo.GetMessagesInDuration(ctx, req)
+	return m.messageRepo.GetMessagesInDuration(ctx, channelID, start, end)
 }
 
 func (m *messageUsecase) GetPinnedMessages(ctx context.Context, channelID uuid.UUID) ([]*model.Message, error) {

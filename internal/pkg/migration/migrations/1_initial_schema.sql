@@ -6,8 +6,8 @@ CREATE TABLE u_channel (
     display_name VARCHAR(32) NOT NULL,
     description VARCHAR(256) NOT NULL DEFAULT "",
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- u_message: メッセージ情報
 CREATE TABLE u_message (
@@ -42,7 +42,7 @@ CREATE TABLE u_user (
     status VARCHAR(4096) NOT NULL DEFAULT "",
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_user_id (user_name)
+    INDEX idx_user_name (user_name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- u_user_private: ユーザーのプライベート情報
@@ -56,6 +56,8 @@ CREATE TABLE u_user_private (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- +goose Down
-DROP TABLE IF EXISTS u_channel;
-DROP TABLE IF EXISTS u_user;
+DROP TABLE IF EXISTS u_pinned_message;
+DROP TABLE IF EXISTS u_message;
 DROP TABLE IF EXISTS u_user_private;
+DROP TABLE IF EXISTS u_user;
+DROP TABLE IF EXISTS u_channel;

@@ -80,5 +80,25 @@ func (r *Router) Setup() http.Handler {
 		})
 	})
 
+	// 静的ファイルの配信（CSS、JS、画像など）
+	router.Get("/styles.css", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./view/styles.css")
+	})
+	router.Get("/script.js", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./view/script.js")
+	})
+
+	// ルートページ
+	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./view/index.html")
+	})
+
+	// その他の静的ファイル（フォールバック）
+	router.Get("/*", func(w http.ResponseWriter, r *http.Request) {
+		// APIエンドポイント以外のリクエストは静的ファイルとして処理
+		filePath := "./view" + r.URL.Path
+		http.ServeFile(w, r, filePath)
+	})
+
 	return router
 }

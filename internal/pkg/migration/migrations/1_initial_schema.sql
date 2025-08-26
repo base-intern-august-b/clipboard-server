@@ -25,7 +25,6 @@ CREATE TABLE u_message (
 
 -- u_pinned_message: ピン留めされたメッセージ情報
 CREATE TABLE u_pinned_message (
-    pinned_message_id CHAR(36) NOT NULL PRIMARY KEY,
     message_id CHAR(36) NOT NULL,
     channel_id CHAR(36) NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

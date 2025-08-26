@@ -11,12 +11,14 @@ import (
 
 type Router struct {
 	channelUsecase usecase.ChannelUsecase
+	messageUsecase usecase.MessageUsecase
 	userUsecase    usecase.UserUsecase
 }
 
-func NewRouter(channelUsecase usecase.ChannelUsecase, userUsecase usecase.UserUsecase) *Router {
+func NewRouter(channelUsecase usecase.ChannelUsecase, messageUsecase usecase.MessageUsecase, userUsecase usecase.UserUsecase) *Router {
 	return &Router{
 		channelUsecase: channelUsecase,
+		messageUsecase: messageUsecase,
 		userUsecase:    userUsecase,
 	}
 }
@@ -57,6 +59,19 @@ func (r *Router) Setup() http.Handler {
 			channel.Get("/{channelNID}", channelHandler.GetChannelByName)
 			channel.Patch("/{channelID}", channelHandler.PatchChannel)
 			channel.Delete("/{channelID}", channelHandler.DeleteChannel)
+		})
+
+		// メッセージAPI
+		messageHandler := NewMessageHandler(r.messageUsecase)
+		v1.Route("/messages", func(message chi.Router) {
+			message.Post("/", messageHandler.CreateMessage)
+			message.Post("/pinn/{messageID}", messageHandler.PinnMessage)
+			message.Post("/unpinn/{messageID}", messageHandler.UnpinnMessage)
+			message.Get("/channel", messageHandler.GetMessages)
+			message.Get("/channel/span", messageHandler.GetMessagesInDuration)
+			message.Get("/pinned/{channelID}", messageHandler.GetPinnedMessages)
+			message.Patch("/{messageID}", messageHandler.PatchMessage)
+			message.Delete("/{messageID}", messageHandler.DeleteMessage)
 		})
 	})
 

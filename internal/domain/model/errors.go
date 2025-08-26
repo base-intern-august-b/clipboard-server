@@ -20,4 +20,11 @@ var (
 	ErrAlreadyExistChannelName = errors.New("Channel Name already exists")
 	ErrInvalidDisplayName      = errors.New("invalid Channel Display Name")
 	ErrChannelNotFound         = errors.New("channel not found")
+
+	ErrInvalidMessageContent = errors.New("invalid Message Content")
+	ErrMessageNotFound       = errors.New("message not found")
+	ErrInvalidRequestLimit   = errors.New("invalid request limit")
+	ErrInvalidTimeRange      = errors.New("invalid time range")
+	ErrMessageAlreadyPinned  = errors.New("message already pinned")
+	ErrMessageNotPinned      = errors.New("message not pinned")
 )

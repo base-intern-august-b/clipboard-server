@@ -7,6 +7,7 @@ import (
 	"github.com/base-intern-august-b/clipboard-server/internal/domain/model"
 	"github.com/base-intern-august-b/clipboard-server/internal/domain/repository"
 	"github.com/base-intern-august-b/clipboard-server/internal/domain/usecase"
+	"github.com/gofrs/uuid"
 )
 
 var (
@@ -44,30 +45,26 @@ func (c *channelUseCase) CreateChannel(ctx context.Context, req *model.RequestCr
 	return c.channelRepo.CreateChannel(ctx, req)
 }
 
-func (c *channelUseCase) GetChannelByName(ctx context.Context, channelName string) (*model.Channel, error) {
-	if err := c.validateChannelName(channelName); err != nil {
-		return nil, err
-	}
-	return c.channelRepo.GetChannelByName(ctx, channelName)
+func (c *channelUseCase) GetChannel(ctx context.Context, channelID uuid.UUID) (*model.Channel, error) {
+	return c.channelRepo.GetChannel(ctx, channelID)
 }
 
 func (c *channelUseCase) GetChannels(ctx context.Context) ([]*model.Channel, error) {
 	return c.channelRepo.GetChannels(ctx)
 }
 
-func (c *channelUseCase) PatchChannel(ctx context.Context, channelName string, req *model.RequestPatchChannel) (*model.Channel, error) {
-	if err := c.validateChannelName(channelName); err != nil {
-		return nil, err
+func (c *channelUseCase) PatchChannel(ctx context.Context, channelID uuid.UUID, req *model.RequestPatchChannel) (*model.Channel, error) {
+	if req.ChannelName != nil {
+		if err := c.validateChannelName(*req.ChannelName); err != nil {
+			return nil, err
+		}
 	}
 	if req.DisplayName != nil && *req.DisplayName == "" {
 		return nil, model.ErrInvalidDisplayName
 	}
-	return c.channelRepo.PatchChannel(ctx, channelName, req)
+	return c.channelRepo.PatchChannel(ctx, channelID, req)
 }
 
-func (c *channelUseCase) DeleteChannel(ctx context.Context, channelName string) error {
-	if err := c.validateChannelName(channelName); err != nil {
-		return err
-	}
-	return c.channelRepo.DeleteChannel(ctx, channelName)
+func (c *channelUseCase) DeleteChannel(ctx context.Context, channelID uuid.UUID) error {
+	return c.channelRepo.DeleteChannel(ctx, channelID)
 }

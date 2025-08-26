@@ -9,6 +9,7 @@ import (
 	"github.com/base-intern-august-b/clipboard-server/internal/domain/model"
 	"github.com/base-intern-august-b/clipboard-server/internal/domain/repository"
 	"github.com/go-sql-driver/mysql"
+	"github.com/gofrs/uuid"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -21,13 +22,26 @@ func NewChannelRepository(db *sqlx.DB) repository.ChannelRepository {
 }
 
 func (r *channelRepository) CreateChannel(ctx context.Context, req *model.RequestCreateChannel) (*model.Channel, error) {
-	query := `INSERT INTO u_channel (channel_name, display_name, description) VALUES (?, ?, ?)`
-	_, err := r.db.ExecContext(ctx, query, req.ChannelName, req.DisplayName, req.Description)
+	channelID, err := uuid.NewV4()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate UUID: %w", err)
+	}
+
+	query := `INSERT INTO u_channel (channel_id, channel_name, display_name, description) VALUES (?, ?, ?, ?)`
+	result, err := r.db.ExecContext(ctx, query, channelID.String(), req.ChannelName, req.DisplayName, req.Description)
 	if err != nil {
 		if mysqlErr, ok := err.(*mysql.MySQLError); ok && mysqlErr.Number == 1062 {
 			return nil, model.ErrAlreadyExistChannelName
 		}
 		return nil, err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return nil, err
+	}
+	if rowsAffected == 0 {
+		return nil, model.ErrChannelNotFound
 	}
 
 	var createdChannel model.Channel
@@ -43,10 +57,10 @@ func (r *channelRepository) CreateChannel(ctx context.Context, req *model.Reques
 	return &createdChannel, nil
 }
 
-func (r *channelRepository) GetChannelByName(ctx context.Context, channelName string) (*model.Channel, error) {
-	query := `SELECT * FROM u_channel WHERE channel_name = ?`
+func (r *channelRepository) GetChannel(ctx context.Context, channelID uuid.UUID) (*model.Channel, error) {
+	query := `SELECT * FROM u_channel WHERE channel_id = ?`
 	var channel model.Channel
-	if err := r.db.GetContext(ctx, &channel, query, channelName); err != nil {
+	if err := r.db.GetContext(ctx, &channel, query, channelID.String()); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -67,7 +81,7 @@ func (r *channelRepository) GetChannels(ctx context.Context) ([]*model.Channel, 
 	return channels, nil
 }
 
-func (r *channelRepository) PatchChannel(ctx context.Context, channelName string, req *model.RequestPatchChannel) (*model.Channel, error) {
+func (r *channelRepository) PatchChannel(ctx context.Context, channelID uuid.UUID, req *model.RequestPatchChannel) (*model.Channel, error) {
 	setClauses := []string{}
 	args := []interface{}{}
 
@@ -81,11 +95,11 @@ func (r *channelRepository) PatchChannel(ctx context.Context, channelName string
 	}
 
 	if len(setClauses) == 0 {
-		return r.GetChannelByName(ctx, channelName)
+		return r.GetChannel(ctx, channelID)
 	}
 
-	args = append(args, channelName)
-	query := fmt.Sprintf("UPDATE u_channel SET %s WHERE channel_name = ?", strings.Join(setClauses, ", "))
+	args = append(args, channelID.String())
+	query := fmt.Sprintf("UPDATE u_channel SET %s WHERE channel_id = ?", strings.Join(setClauses, ", "))
 
 	result, err := r.db.ExecContext(ctx, query, args...)
 	if err != nil {
@@ -100,12 +114,12 @@ func (r *channelRepository) PatchChannel(ctx context.Context, channelName string
 		return nil, model.ErrChannelNotFound
 	}
 
-	return r.GetChannelByName(ctx, channelName)
+	return r.GetChannel(ctx, channelID)
 }
 
-func (r *channelRepository) DeleteChannel(ctx context.Context, channelName string) error {
-	query := `DELETE FROM u_channel WHERE channel_name = ?`
-	result, err := r.db.ExecContext(ctx, query, channelName)
+func (r *channelRepository) DeleteChannel(ctx context.Context, channelID uuid.UUID) error {
+	query := `DELETE FROM u_channel WHERE channel_id = ?`
+	result, err := r.db.ExecContext(ctx, query, channelID.String())
 	if err != nil {
 		return err
 	}

@@ -12,7 +12,7 @@ var (
 	ErrAlreadyExistUserName = errors.New("User Name already exists")
 	ErrInvalidNickname      = errors.New("invalid Nickname")
 	ErrWeakPassword         = errors.New("weak Password")
-	ErrBadFormatEmail       = errors.New("Email does not match the required format")
+	ErrBadFormatEmail       = errors.New("email does not match the required format")
 	ErrUserNotFound         = errors.New("user not found")
 
 	ErrInvalidChannelName      = errors.New("invalid Channel Name")

@@ -6,7 +6,6 @@ import (
 
 	"github.com/base-intern-august-b/clipboard-server/internal/domain/model"
 	"github.com/base-intern-august-b/clipboard-server/internal/domain/usecase"
-	"github.com/go-chi/chi/v5"
 )
 
 type ChannelHandler struct {
@@ -38,11 +37,15 @@ func (h *ChannelHandler) CreateChannel(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(channel)
 }
 
-// GetChannelByName : GET /v1/channels/{channelName}
+// GetChannelByName : GET /v1/channels/{channelID}
 func (h *ChannelHandler) GetChannelByName(w http.ResponseWriter, r *http.Request) {
-	channelName := chi.URLParam(r, "channelName")
+	channelID, err := getID(r, "channelID")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
-	channel, err := h.channelUsecase.GetChannelByName(r.Context(), channelName)
+	channel, err := h.channelUsecase.GetChannel(r.Context(), channelID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -69,9 +72,13 @@ func (h *ChannelHandler) GetChannels(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(channels)
 }
 
-// PatchChannel : PATCH /v1/channels/{channelName}
+// PatchChannel : PATCH /v1/channels/{channelID}
 func (h *ChannelHandler) PatchChannel(w http.ResponseWriter, r *http.Request) {
-	channelName := chi.URLParam(r, "channelName")
+	channelID, err := getID(r, "channelID")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	var req model.RequestPatchChannel
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -79,7 +86,7 @@ func (h *ChannelHandler) PatchChannel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	channel, err := h.channelUsecase.PatchChannel(r.Context(), channelName, &req)
+	channel, err := h.channelUsecase.PatchChannel(r.Context(), channelID, &req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -95,9 +102,13 @@ func (h *ChannelHandler) PatchChannel(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ChannelHandler) DeleteChannel(w http.ResponseWriter, r *http.Request) {
-	channelName := chi.URLParam(r, "channelName")
+	channelID, err := getID(r, "channelID")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
-	err := h.channelUsecase.DeleteChannel(r.Context(), channelName)
+	err = h.channelUsecase.DeleteChannel(r.Context(), channelID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

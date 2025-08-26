@@ -9,6 +9,32 @@ CREATE TABLE u_channel (
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 
+-- u_message: メッセージ情報
+CREATE TABLE u_message (
+    message_id CHAR(36) NOT NULL PRIMARY KEY,
+    channel_id CHAR(36) NOT NULL,
+    user_id CHAR(36) NOT NULL,
+    content TEXT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (channel_id) REFERENCES u_channel(channel_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES u_user(user_id) ON DELETE CASCADE,
+    INDEX idx_channel_id (channel_id),
+    INDEX idx_user_id (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- u_pinned_message: ピン留めされたメッセージ情報
+CREATE TABLE u_pinned_message (
+    pinned_message_id CHAR(36) NOT NULL PRIMARY KEY,
+    message_id CHAR(36) NOT NULL,
+    channel_id CHAR(36) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (message_id) REFERENCES u_message(message_id) ON DELETE CASCADE,
+    FOREIGN KEY (channel_id) REFERENCES u_channel(channel_id) ON DELETE CASCADE,
+    UNIQUE KEY unique_message_channel (message_id, channel_id),
+    INDEX idx_channel_id (channel_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- u_user: ユーザー情報
 CREATE TABLE u_user (
     user_id CHAR(36) NOT NULL PRIMARY KEY,

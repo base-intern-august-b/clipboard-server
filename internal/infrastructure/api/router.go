@@ -54,9 +54,9 @@ func (r *Router) Setup() http.Handler {
 		v1.Route("/channels", func(channel chi.Router) {
 			channel.Post("/", channelHandler.CreateChannel)
 			channel.Get("/", channelHandler.GetChannels)
-			channel.Get("/{channelName}", channelHandler.GetChannelByName)
-			channel.Patch("/{channelName}", channelHandler.PatchChannel)
-			channel.Delete("/{channelName}", channelHandler.DeleteChannel)
+			channel.Get("/{channelNID}", channelHandler.GetChannelByName)
+			channel.Patch("/{channelID}", channelHandler.PatchChannel)
+			channel.Delete("/{channelID}", channelHandler.DeleteChannel)
 		})
 	})
 

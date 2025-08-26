@@ -15,10 +15,17 @@ type Message struct {
 	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
 }
 
+type MessageDetail struct {
+	Message
+	User *User `json:"user"`
+	Tags []*Tag `json:"tags"`
+}
+
 type RequestCreateMessage struct {
 	ChannelID uuid.UUID `json:"channel_id"`
 	UserID    uuid.UUID `json:"user_id"`
 	Content   string    `json:"content"`
+	Tags      []string  `json:"tags"`
 }
 
 type RequestPatchMessage struct {

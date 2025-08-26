@@ -22,6 +22,18 @@ func NewMessageRepository(db *sqlx.DB) repository.MessageRepository {
 	return &messageRepository{db: db}
 }
 
+func (r *messageRepository) GetMessage(ctx context.Context, messageID uuid.UUID) (*model.Message, error) {
+	var message model.Message
+	err := r.db.GetContext(ctx, &message, "SELECT * FROM u_message WHERE message_id = ?", messageID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, model.ErrMessageNotFound
+		}
+		return nil, err
+	}
+	return &message, nil
+}
+
 func (r *messageRepository) CreateMessage(ctx context.Context, req *model.RequestCreateMessage) (*model.Message, error) {
 	messageID, err := uuid.NewV4()
 	if err != nil {

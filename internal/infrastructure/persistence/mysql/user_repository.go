@@ -105,6 +105,26 @@ func (r *userRepository) GetUserByID(ctx context.Context, userID uuid.UUID) (*mo
 	return &user, nil
 }
 
+func (r *userRepository) GetUsersByIDs(ctx context.Context, userIDs []uuid.UUID) ([]*model.User, error) {
+	if len(userIDs) == 0 {
+		return []*model.User{}, nil
+	}
+
+	query := "SELECT * FROM u_user WHERE user_id IN (?)"
+	query, args, err := sqlx.In(query, userIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	query = r.db.Rebind(query)
+	var users []*model.User
+	err = r.db.SelectContext(ctx, &users, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
 func (r *userRepository) PatchUser(ctx context.Context, userID uuid.UUID, req *model.RequestPatchUser) (*model.User, error) {
 	setClauses := []string{}
 	args := []interface{}{}

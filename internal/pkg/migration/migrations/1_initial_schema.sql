@@ -55,7 +55,28 @@ CREATE TABLE u_user_private (
     FOREIGN KEY (user_id) REFERENCES u_user(user_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- u_tags: タグ情報
+CREATE TABLE u_tags (
+    hashed_tag CHAR(32) NOT NULL PRIMARY KEY,
+    raw_tag VARCHAR(32) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- u_tag_relation: メッセージとタグの関連
+CREATE TABLE u_tag_relation (
+    message_id CHAR(36) NOT NULL,
+    channel_id CHAR(36) NOT NULL,
+    hashed_tag CHAR(32) NOT NULL,
+    FOREIGN KEY (message_id) REFERENCES u_message(message_id) ON DELETE CASCADE,
+    FOREIGN KEY (channel_id) REFERENCES u_channel(channel_id) ON DELETE CASCADE,
+    FOREIGN KEY (hashed_tag) REFERENCES u_tags(hashed_tag) ON DELETE CASCADE,
+    UNIQUE KEY unique_message_tag (message_id, hashed_tag),
+    INDEX idx_channel_id_hashed_tag (channel_id, hashed_tag)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- +goose Down
+DROP TABLE IF EXISTS u_tag_relation;
+DROP TABLE IF EXISTS u_tags;
 DROP TABLE IF EXISTS u_pinned_message;
 DROP TABLE IF EXISTS u_message;
 DROP TABLE IF EXISTS u_user_private;

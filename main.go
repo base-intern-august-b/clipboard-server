@@ -42,14 +42,16 @@ func main() {
 	userRepo := mysql.NewUserRepository(db)
 	messageRepo := mysql.NewMessageRepository(db)
 	channelRepo := mysql.NewChannelRepository(db)
+	tagRepo := mysql.NewTagRepository(db)
 
 	// ユースケースの初期化
 	userUsecase := usecase.NewUserUsecase(userRepo)
-	messageUsecase := usecase.NewMessageUsecase(messageRepo)
+	messageUsecase := usecase.NewMessageUsecase(messageRepo, userRepo, tagRepo)
 	channelUsecase := usecase.NewChannelUsecase(channelRepo)
+	tagUsecase := usecase.NewTagUsecase(tagRepo, messageRepo, userRepo)
 
 	// APIルーターの設定
-	router := api.NewRouter(channelUsecase, messageUsecase, userUsecase)
+	router := api.NewRouter(channelUsecase, messageUsecase, userUsecase, tagUsecase)
 	handler := router.Setup()
 
 	// HTTPサーバーの設定

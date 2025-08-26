@@ -10,6 +10,7 @@ import (
 
 type MessageRepository interface {
 	CreateMessage(ctx context.Context, req *model.RequestCreateMessage) (*model.Message, error)
+	GetMessage(ctx context.Context, messageID uuid.UUID) (*model.Message, error)
 	GetMessages(ctx context.Context, channelID uuid.UUID, limit int, offset int) ([]*model.Message, error)
 	GetMessagesInDuration(ctx context.Context, channelID uuid.UUID, start, end time.Time) ([]*model.Message, error)
 	GetPinnedMessages(ctx context.Context, channelID uuid.UUID) ([]*model.Message, error)

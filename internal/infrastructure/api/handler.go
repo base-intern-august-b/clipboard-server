@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/base-intern-august-b/clipboard-server/internal/domain/model"
 	"github.com/go-chi/chi/v5"
@@ -18,4 +19,19 @@ func getID(r *http.Request, key string) (uuid.UUID, error) {
 	}
 
 	return id, nil
+}
+
+func getLimitOffset(r *http.Request) (int, int) {
+	limitStr := r.URL.Query().Get("limit")
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limitStr == "" {
+		limit = 100 // Default limit
+	}
+
+	offsetStr := r.URL.Query().Get("offset")
+	offset, err := strconv.Atoi(offsetStr)
+	if err != nil || offsetStr == "" {
+		offset = 0 // Default offset
+	}
+	return limit, offset
 }

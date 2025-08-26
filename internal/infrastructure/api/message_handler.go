@@ -42,6 +42,28 @@ func (h *MessageHandler) CreateMessage(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(message)
 }
 
+// GetMessage : GET /v1/messages/{messageID}
+func (h *MessageHandler) GetMessage(w http.ResponseWriter, r *http.Request) {
+	messageID, err := getID(r, "messageID")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	message, err := h.messageUsecase.GetMessage(r.Context(), messageID)
+	if err != nil {
+		if err == model.ErrMessageNotFound {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(message)
+}
+
 // GetMessages : GET /v1/channels/{channelID}/messages
 func (h *MessageHandler) GetMessages(w http.ResponseWriter, r *http.Request) {
 	channelID, err := getID(r, "channelID")
@@ -50,17 +72,7 @@ func (h *MessageHandler) GetMessages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	limitStr := r.URL.Query().Get("limit")
-	limit, err := strconv.Atoi(limitStr)
-	if err != nil || limitStr == "" {
-		limit = 100 // Default limit
-	}
-
-	offsetStr := r.URL.Query().Get("offset")
-	offset, err := strconv.Atoi(offsetStr)
-	if err != nil || offsetStr == "" {
-		offset = 0 // Default offset
-	}
+	limit, offset := getLimitOffset(r)
 
 	messages, err := h.messageUsecase.GetMessages(r.Context(), channelID, limit, offset)
 	if err != nil {

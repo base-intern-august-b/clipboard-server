@@ -40,12 +40,14 @@ func main() {
 
 	// リポジトリの初期化
 	userRepo := mysql.NewUserRepository(db)
+	channelRepo := mysql.NewChannelRepository(db)
 
 	// ユースケースの初期化
 	userUsecase := usecase.NewUserUsecase(userRepo)
+	channelUsecase := usecase.NewChannelUsecase(channelRepo)
 
 	// APIルーターの設定
-	router := api.NewRouter(userUsecase)
+	router := api.NewRouter(channelUsecase, userUsecase)
 	handler := router.Setup()
 
 	// HTTPサーバーの設定

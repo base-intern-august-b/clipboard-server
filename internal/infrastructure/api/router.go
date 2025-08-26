@@ -10,12 +10,14 @@ import (
 )
 
 type Router struct {
-	userUsecase usecase.UserUsecase
+	channelUsecase usecase.ChannelUsecase
+	userUsecase    usecase.UserUsecase
 }
 
-func NewRouter(userUsecase usecase.UserUsecase) *Router {
+func NewRouter(channelUsecase usecase.ChannelUsecase, userUsecase usecase.UserUsecase) *Router {
 	return &Router{
-		userUsecase: userUsecase,
+		channelUsecase: channelUsecase,
+		userUsecase:    userUsecase,
 	}
 }
 
@@ -45,6 +47,16 @@ func (r *Router) Setup() http.Handler {
 			user.Patch("/{userID}", userHandler.PatchUser)
 			user.Post("/{userID}/change-password", userHandler.ChangePassword)
 			user.Delete("/{userID}", userHandler.DeleteUser)
+		})
+
+		// チャンネルAPI
+		channelHandler := NewChannelHandler(r.channelUsecase)
+		v1.Route("/channels", func(channel chi.Router) {
+			channel.Post("/", channelHandler.CreateChannel)
+			channel.Get("/", channelHandler.GetChannels)
+			channel.Get("/{channelName}", channelHandler.GetChannelByName)
+			channel.Patch("/{channelName}", channelHandler.PatchChannel)
+			channel.Delete("/{channelName}", channelHandler.DeleteChannel)
 		})
 	})
 

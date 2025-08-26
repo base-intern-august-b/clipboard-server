@@ -1,9 +1,13 @@
 package model
 
-import "time"
+import (
+	"time"
+
+	"github.com/gofrs/uuid"
+)
 
 type Channel struct {
-	ChannelID   int64     `db:"channel_id" json:"channel_id"`
+	ChannelID   uuid.UUID `db:"channel_id" json:"channel_id"`
 	ChannelName string    `db:"channel_name" json:"channel_name"`
 	DisplayName string    `db:"display_name" json:"display_name"`
 	Description string    `db:"description" json:"description"`

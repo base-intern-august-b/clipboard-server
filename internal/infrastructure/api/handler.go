@@ -2,9 +2,13 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
+	"github.com/base-intern-august-b/clipboard-server/internal/domain/model"
 	"github.com/base-intern-august-b/clipboard-server/internal/service"
+	"github.com/go-chi/chi/v5"
+	"github.com/gofrs/uuid"
 	"github.com/gorilla/mux"
 )
 
@@ -40,4 +44,15 @@ func (h *Handler) pingHandler(w http.ResponseWriter, r *http.Request) {
 		"status":  "ok",
 		"message": "pong",
 	})
+}
+
+func getID(r *http.Request, key string) (uuid.UUID, error) {
+	id, err := uuid.FromString(chi.URLParam(r, key))
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("%w: %s", model.ErrInvalidUUID, err.Error())
+	} else if id.IsNil() {
+		return uuid.Nil, model.ErrNilUUID
+	}
+
+	return id, nil
 }

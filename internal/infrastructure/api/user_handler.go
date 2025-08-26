@@ -6,7 +6,6 @@ import (
 
 	"github.com/base-intern-august-b/clipboard-server/internal/domain/model"
 	"github.com/base-intern-august-b/clipboard-server/internal/domain/usecase"
-	"github.com/go-chi/chi/v5"
 )
 
 type UserHandler struct {
@@ -50,11 +49,15 @@ func (h *UserHandler) GetUsers(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(users)
 }
 
-// GetUserByID : GET /v1/users/{userName}
+// GetUserByID : GET /v1/users/{userID}
 func (h *UserHandler) GetUserByID(w http.ResponseWriter, r *http.Request) {
-	userName := chi.URLParam(r, "userName")
+	userID, err := getID(r, "userID")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
-	user, err := h.userUsecase.GetUserByName(r.Context(), userName)
+	user, err := h.userUsecase.GetUserByID(r.Context(), userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -69,30 +72,11 @@ func (h *UserHandler) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(user)
 }
 
-// GetUsersByID : POST /v1/users/_batch
-func (h *UserHandler) GetUsersByID(w http.ResponseWriter, r *http.Request) {
-	var req model.RequestGetUserBatch
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	users, err := h.userUsecase.GetUsersByName(r.Context(), req.UserNames)
-	if err != nil {
-		http.Error(w, "Failed to get users", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(users)
-}
-
-// PatchUser : PATCH /v1/users/{userName}
+// PatchUser : PATCH /v1/users/{userId}
 func (h *UserHandler) PatchUser(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	userName := chi.URLParam(r, "userName")
-	if userName == "" {
-		http.Error(w, "userName is required", http.StatusBadRequest)
+	userID, err := getID(r, "userID")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -102,7 +86,7 @@ func (h *UserHandler) PatchUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.userUsecase.PatchUser(ctx, userName, &req)
+	user, err := h.userUsecase.PatchUser(r.Context(), userID, &req)
 	if err != nil {
 		if err == model.ErrAlreadyExistUserName {
 			http.Error(w, err.Error(), http.StatusConflict)
@@ -121,16 +105,42 @@ func (h *UserHandler) PatchUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(user)
 }
 
-// DeleteUser : DELETE /v1/users/{userName}
-func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	userName := chi.URLParam(r, "userName")
-	if userName == "" {
-		http.Error(w, "userName is required", http.StatusBadRequest)
+// ChangePassword : POST /v1/users/{userID}/change-password
+func (h *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
+	userID, err := getID(r, "userID")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	err := h.userUsecase.DeleteUser(ctx, userName)
+	var req model.RequestChangePassword
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid request", http.StatusBadRequest)
+		return
+	}
+
+	err = h.userUsecase.ChangePassword(r.Context(), userID, &req)
+	if err != nil {
+		if err == model.ErrNothingChanged {
+			http.Error(w, err.Error(), http.StatusNoContent)
+			return
+		}
+		http.Error(w, "failed to change password", http.StatusBadRequest)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// DeleteUser : DELETE /v1/users/{userID}
+func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
+	userID, err := getID(r, "userID")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = h.userUsecase.DeleteUser(r.Context(), userID)
 	if err != nil {
 		http.Error(w, "failed to delete user", http.StatusBadRequest)
 		return

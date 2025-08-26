@@ -41,9 +41,9 @@ func (r *Router) Setup() http.Handler {
 		v1.Route("/users", func(user chi.Router) {
 			user.Post("/", userHandler.CreateUser)
 			user.Get("/", userHandler.GetUsers)
-			user.Get("/_batch", userHandler.GetUsersByID)
 			user.Get("/{userID}", userHandler.GetUserByID)
 			user.Patch("/{userID}", userHandler.PatchUser)
+			user.Post("/{userID}/change-password", userHandler.ChangePassword)
 			user.Delete("/{userID}", userHandler.DeleteUser)
 		})
 	})

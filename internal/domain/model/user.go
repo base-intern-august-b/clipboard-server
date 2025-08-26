@@ -1,10 +1,14 @@
 package model
 
-import "time"
+import (
+	"time"
+
+	"github.com/gofrs/uuid"
+)
 
 // User はユーザーを表すドメインモデル
 type User struct {
-	UserID    int64     `db:"user_id" json:"user_id"`
+	UserID    uuid.UUID `db:"user_id" json:"user_id"`
 	UserName  string    `db:"user_name" json:"user_name"`
 	Nickname  string    `db:"nickname" json:"nickname"`
 	Status    string    `db:"status" json:"status"`
@@ -14,6 +18,7 @@ type User struct {
 
 type RequestCreateUser struct {
 	UserName string `db:"user_name" json:"user_name"`
+	Password string `db:"password" json:"password"`
 	Nickname string `db:"nickname" json:"nickname"`
 	Status   string `db:"status" json:"status"`
 }
@@ -24,6 +29,12 @@ type RequestGetUserBatch struct {
 
 type RequestPatchUser struct {
 	UserName *string `json:"user_name,omitempty"`
+	Email    *string `json:"email,omitempty"`
 	Nickname *string `json:"nickname,omitempty"`
 	Status   *string `json:"status,omitempty"`
+}
+
+type RequestChangePassword struct {
+	OldPassword string `json:"old_password"`
+	NewPassword string `json:"new_password"`
 }
